@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+rule_files:
+  - alerting_rules.yml
+scrape_configs:
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+    - role: endpoints
+      namespaces:
+        names:
+        - default
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+    - role: node
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+    - role: pod
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - alertmanager:9093

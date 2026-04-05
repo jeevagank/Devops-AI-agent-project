@@ -1,0 +1,20 @@
+# Create a Kubernetes manifest for each microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-microservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-microservice
+  template:
+    metadata:
+      labels:
+        app: my-microservice
+    spec:
+      containers:
+      - name: my-microservice
+        image: my-docker-image
+        ports:
+        - containerPort: 80

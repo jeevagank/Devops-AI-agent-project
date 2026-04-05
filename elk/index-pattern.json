@@ -1,0 +1,1 @@
+{"title": "Logs", "timeFieldName": "@timestamp", "fields": ["message", "level"]}

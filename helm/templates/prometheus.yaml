@@ -1,0 +1,10 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: {{ .Values.image.repository }}
+spec:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi

@@ -1,0 +1,21 @@
+{
+  "rows": [
+    {
+      "title": "DB Metrics",
+      "panels": [
+        {
+          "id": 11,
+          "title": "Query Latency",
+          "query": "histogram_quantile(0.99, rate(db_query_latency_seconds_bucket[1m]))",
+          "type": "graph"
+        },
+        {
+          "id": 12,
+          "title": "Connection Count",
+          "query": "sum(db_connection_count)",
+          "type": "graph"
+        }
+      ]
+    }
+  ]
+}

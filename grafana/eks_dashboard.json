@@ -1,0 +1,55 @@
+{
+  "rows": [
+    {
+      "title": "EKS Cluster Metrics",
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU Utilization",
+          "query": "sum(rate(container_cpu_usage_seconds_total{image!=''})[1m])",
+          "type": "graph"
+        },
+        {
+          "id": 2,
+          "title": "Memory Utilization",
+          "query": "sum(container_memory_working_set_bytes)/sum(container_memory_limit_bytes)",
+          "type": "graph"
+        }
+      ]
+    },
+    {
+      "title": "Application Metrics",
+      "panels": [
+        {
+          "id": 3,
+          "title": "Request Latency",
+          "query": "histogram_quantile(0.99, rate(http_request_latency_seconds_bucket[1m]))",
+          "type": "graph"
+        },
+        {
+          "id": 4,
+          "title": "Error Rate",
+          "query": "sum(rate(http_request_status_code{code="4xx"}[1m])) / sum(rate(http_request_status_code[1m]))",
+          "type": "graph"
+        }
+      ]
+    },
+    {
+      "title": "Database Metrics",
+      "panels": [
+        {
+          "id": 5,
+          "title": "Query Latency",
+          "query": "histogram_quantile(0.99, rate(db_query_latency_seconds_bucket[1m]))",
+          "type": "graph"
+        },
+        {
+          "id": 6,
+          "title": "Connection Count",
+          "query": "sum(db_connection_count)",
+          "type": "graph"
+        }
+      ]
+    }
+  ]
+}

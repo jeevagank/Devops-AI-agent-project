@@ -1,0 +1,61 @@
+{
+  "rows": [
+    {
+      "title": "EKS Cluster Metrics",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Node CPU utilization",
+          "query": "100 - (100 * idle)",
+          "datasource": "Prometheus",
+          "type": "graph"
+        },
+        {
+          "id": 2,
+          "title": "Node memory utilization",
+          "query": "100 - (100 * idle)",
+          "datasource": "Prometheus",
+          "type": "graph"
+        }
+      ]
+    },
+    {
+      "title": "Application Metrics",
+      "panels": [
+        {
+          "id": 3,
+          "title": "Request latency",
+          "query": "histogram_quantile(0.5, rate(request_latency_bucket[1m]))",
+          "datasource": "Prometheus",
+          "type": "graph"
+        },
+        {
+          "id": 4,
+          "title": "Error rate",
+          "query": "sum(rate(errors[1m]))",
+          "datasource": "Prometheus",
+          "type": "graph"
+        }
+      ]
+    },
+    {
+      "title": "Database Metrics",
+      "panels": [
+        {
+          "id": 5,
+          "title": "Database connections",
+          "query": "pg_stat_activity",
+          "datasource": "Prometheus",
+          "type": "graph"
+        },
+        {
+          "id": 6,
+          "title": "Query latency",
+          "query": "histogram_quantile(0.5, rate(query_latency_bucket[1m]))",
+          "datasource": "Prometheus",
+          "type": "graph"
+        }
+      ]
+    }
+  ]
+}

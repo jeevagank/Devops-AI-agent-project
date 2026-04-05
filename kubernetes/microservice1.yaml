@@ -1,0 +1,20 @@
+# Kubernetes manifests for microservices
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: microservice1
+  template:
+    metadata:
+      labels:
+        app: microservice1
+    spec:
+      containers:
+      - name: microservice1
+        image: your-image
+        ports:
+        - containerPort: 8080

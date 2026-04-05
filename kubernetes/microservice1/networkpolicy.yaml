@@ -1,0 +1,19 @@
+# Kubernetes network policies for microservices
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: microservice1
+spec:
+  podSelector:
+    matchLabels:
+      app: microservice1
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: microservice2
+    ports:
+    - 8080

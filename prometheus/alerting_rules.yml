@@ -1,0 +1,17 @@
+groups:
+- name: kubernetes.rules
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: Instance {{ $labels.instance }} down
+  - alert: NodeDown
+    expr: node_up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: Node {{ $labels.node }} down

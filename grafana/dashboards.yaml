@@ -1,0 +1,17 @@
+# Grafana configuration for custom dashboards
+apiVersion: 1
+dashboards:
+  - name: Microservice1
+    rows:
+      - title: Metrics
+        panels:
+          - id: 1
+            title: CPU Usage
+            type: timeseries
+            targets:
+              - query: '100 - (100 * idle)
+                '
+                refId: A
+              - query: 'usage_rate{job="microservice1"}
+                '
+                refId: B
