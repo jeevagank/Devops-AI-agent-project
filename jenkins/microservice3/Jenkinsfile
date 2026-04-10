@@ -1,0 +1,187 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME      = "microservice3"
+        AWS_REGION    = "ap-southeast-2"
+        ECR_REGISTRY  = credentials('ecr-registry-url')
+        IMAGE_TAG     = "${env.GIT_COMMIT[0..7]}"
+        IMAGE_NAME    = "${ECR_REGISTRY}/${APP_NAME}"
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 30, unit: 'MINUTES')
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        stage('Resolve Environment') {
+            steps {
+                script {
+                    switch (env.BRANCH_NAME) {
+                        case 'main':
+                            env.DEPLOY_ENV    = 'prod'
+                            env.AWS_ROLE_ARN  = credentials('aws-role-arn-prod')
+                            env.EKS_CLUSTER   = 'prod-telstra-eks'
+                            break
+                        case ~/release\/.*/:
+                            env.DEPLOY_ENV    = 'staging'
+                            env.AWS_ROLE_ARN  = credentials('aws-role-arn-staging')
+                            env.EKS_CLUSTER   = 'staging-telstra-eks'
+                            break
+                        default:
+                            env.DEPLOY_ENV    = 'dev'
+                            env.AWS_ROLE_ARN  = credentials('aws-role-arn-dev')
+                            env.EKS_CLUSTER   = 'dev-telstra-eks'
+                    }
+                    env.K8S_NAMESPACE = "${env.DEPLOY_ENV}-${APP_NAME}"
+                    echo "Deploying ${APP_NAME}:${IMAGE_TAG} → ${env.DEPLOY_ENV} (${env.EKS_CLUSTER})"
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh """
+                    docker build \\
+                        --no-cache \\
+                        --build-arg BUILD_DATE=\$(date -u +%Y-%m-%dT%H:%M:%SZ) \\
+                        --build-arg GIT_COMMIT=${IMAGE_TAG} \\
+                        --build-arg DEPLOY_ENV=${env.DEPLOY_ENV} \\
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} \\
+                        -t ${IMAGE_NAME}:latest \\
+                        docker/${APP_NAME}/
+                """
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh """
+                    trivy image \\
+                        --exit-code 1 \\
+                        --severity HIGH,CRITICAL \\
+                        --no-progress \\
+                        --format table \\
+                        ${IMAGE_NAME}:${IMAGE_TAG}
+                """
+            }
+            post {
+                always {
+                    sh """
+                        trivy image \\
+                            --exit-code 0 \\
+                            --severity HIGH,CRITICAL \\
+                            --format json \\
+                            --output trivy-report-${APP_NAME}.json \\
+                            ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
+                    archiveArtifacts allowEmptyArchive: true, artifacts: "trivy-report-${APP_NAME}.json"
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh "docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} python -m pytest tests/ -v --junitxml=test-results.xml"
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'test-results.xml'
+                }
+            }
+        }
+
+        stage('SonarQube Scan') {
+            steps {
+                withSonarQubeEnv(credentialsId: 'sonarqube-token', installationName: 'SonarQube') {
+                    sh """
+                        sonar-scanner \\
+                            -Dsonar.projectKey=${APP_NAME} \\
+                            -Dsonar.sources=. \\
+                            -Dsonar.projectVersion=${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-credentials']]) {
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} \\
+                            | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Sign Image') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'cosign-private-key', variable: 'COSIGN_KEY'),
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-credentials']
+                ]) {
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} \\
+                            | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        cosign sign --key ${COSIGN_KEY} --yes ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'dev'
+                    expression { env.BRANCH_NAME ==~ /release\/.*/ }
+                }
+            }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-base-credentials']]) {
+                    sh """
+                        CREDS=\$(aws sts assume-role \\
+                            --role-arn ${env.AWS_ROLE_ARN} \\
+                            --role-session-name jenkins-${APP_NAME}-${IMAGE_TAG} \\
+                            --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \\
+                            --output text)
+
+                        export AWS_ACCESS_KEY_ID=\$(echo \$CREDS | awk '{print \$1}')
+                        export AWS_SECRET_ACCESS_KEY=\$(echo \$CREDS | awk '{print \$2}')
+                        export AWS_SESSION_TOKEN=\$(echo \$CREDS | awk '{print \$3}')
+
+                        aws eks update-kubeconfig --region ${AWS_REGION} --name ${env.EKS_CLUSTER}
+                        kubectl set image deployment/${APP_NAME} \\
+                            ${APP_NAME}=${IMAGE_NAME}:${IMAGE_TAG} \\
+                            -n ${env.K8S_NAMESPACE}
+                        kubectl rollout status deployment/${APP_NAME} -n ${env.K8S_NAMESPACE} --timeout=5m
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest || true"
+            cleanWs()
+        }
+        failure {
+            echo "Pipeline failed for ${APP_NAME}:${IMAGE_TAG} on ${env.DEPLOY_ENV}"
+        }
+    }
+}

@@ -1,0 +1,124 @@
+{
+  "title": "MSK Kafka Metrics",
+  "uid": "telstra-kafka-staging",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "env",
+        "type": "constant",
+        "query": "staging",
+        "hide": 1
+      },
+      {
+        "name": "consumergroup",
+        "label": "Consumer Group",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(kafka_consumergroup_lag_sum, consumergroup)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*"
+      },
+      {
+        "name": "topic",
+        "label": "Topic",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(kafka_consumergroup_lag_sum{consumergroup=~'$consumergroup'}, topic)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Consumer Lag by Group",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "kafka_consumergroup_lag_sum{consumergroup=~'$consumergroup', topic=~'$topic'}",
+          "legendFormat": "{{ consumergroup }} / {{ topic }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10000 }, { "color": "red", "value": 50000 }] }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Messages In Per Second (by Topic)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(kafka_topic_partition_current_offset{topic=~'$topic'}[5m])) by (topic)",
+          "legendFormat": "{{ topic }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "mps" } }
+    },
+    {
+      "id": 3,
+      "title": "Consumer Group Not Progressing",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "count(delta(kafka_consumergroup_lag_sum{consumergroup=~'$consumergroup'}[10m]) > 0)",
+          "legendFormat": "Stalled Groups"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Broker Count",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "count(kafka_brokers)", "legendFormat": "Brokers" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Under-Replicated Partitions",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 16, "w": 6, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(kafka_topic_partition_under_replicated_partition)",
+          "legendFormat": "Under-Replicated"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      }
+    }
+  ]
+}

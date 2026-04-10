@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice8
+  namespace: microservice8
+  labels:
+    app: microservice8
+    project: telstra
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: microservice8
+  template:
+    metadata:
+      labels:
+        app: microservice8
+        project: telstra
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: microservice8
+          image: ACCOUNT_ID.dkr.ecr.ap-southeast-2.amazonaws.com/microservice8:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: microservice8-config
+                  key: APP_ENV
+      terminationGracePeriodSeconds: 30

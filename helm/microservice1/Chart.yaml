@@ -1,6 +1,11 @@
-# Helm charts for microservices
-apiVersion: v1
-appVersion: 1.0
-description: Microservice1 Helm chart
+apiVersion: v2
 name: microservice1
-version: 1.0
+description: Helm chart for microservice1
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Jeevagan
+keywords:
+  - telstra
+  - microservice

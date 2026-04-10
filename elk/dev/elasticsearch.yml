@@ -1,0 +1,30 @@
+cluster.name: telstra-dev
+node.name: es-dev-node-1
+node.roles: [master, data, ingest]
+
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# Single node for dev — no replication needed
+discovery.type: single-node
+
+# Index defaults for dev — 1 shard, 0 replicas (no cluster to replicate to)
+index.number_of_shards: 1
+index.number_of_replicas: 0
+
+# Security — disabled for dev inner cluster
+xpack.security.enabled: false
+xpack.security.transport.ssl.enabled: false
+
+# ILM — short retention for dev
+xpack.ilm.enabled: true
+
+# Memory
+bootstrap.memory_lock: true
+
+# Logging
+logger.level: WARN

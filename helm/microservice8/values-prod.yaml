@@ -1,0 +1,22 @@
+replicaCount: 3
+
+image:
+  tag: prod-latest
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+hpa:
+  minReplicas: 3
+  maxReplicas: 10
+
+ingress:
+  host: microservice8.prod.internal.telstra.com
+
+env:
+  APP_ENV: production

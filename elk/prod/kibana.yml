@@ -1,0 +1,27 @@
+server.port: 5601
+server.host: "0.0.0.0"
+server.name: "telstra-kibana-prod"
+server.ssl.enabled: true
+server.ssl.certificate: "/etc/kibana/certs/kibana.crt"
+server.ssl.key: "/etc/kibana/certs/kibana.key"
+
+elasticsearch.hosts: ["https://elasticsearch-prod:9200"]
+elasticsearch.username: "${KIBANA_USER}"
+elasticsearch.password: "${KIBANA_PASSWORD}"
+elasticsearch.ssl.certificateAuthorities: ["/etc/kibana/certs/ca.crt"]
+elasticsearch.ssl.verificationMode: certificate
+elasticsearch.requestTimeout: 30000
+
+xpack.security.enabled: true
+xpack.encryptedSavedObjects.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
+xpack.reporting.encryptionKey: "${KIBANA_REPORTING_KEY}"
+
+kibana.index: ".kibana-prod"
+kibana.defaultAppId: "discover"
+
+logging.appenders.default:
+  type: console
+  layout:
+    type: pattern
+    pattern: "[%date][%level][%logger] %message"
+logging.root.level: warn

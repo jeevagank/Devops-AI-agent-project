@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservice15
+  namespace: microservice15
+  labels:
+    app: microservice15
+    project: telstra
+spec:
+  selector:
+    app: microservice15
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

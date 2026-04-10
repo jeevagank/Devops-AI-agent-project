@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservice10
+  namespace: microservice10
+  labels:
+    app: microservice10
+    project: telstra
+spec:
+  selector:
+    app: microservice10
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

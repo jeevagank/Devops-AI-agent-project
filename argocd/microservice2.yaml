@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microservice2
+  namespace: argocd
+  labels:
+    project: telstra
+    microservice: microservice2
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: telstra
+  source:
+    repoURL: https://github.com/jeevagank/Devops-AI-agent-project.git
+    targetRevision: main
+    path: helm/microservice2
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: microservice2
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

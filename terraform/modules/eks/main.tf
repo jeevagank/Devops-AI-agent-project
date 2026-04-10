@@ -22,6 +22,12 @@ module "eks" {
         Environment = var.env
         Project     = "telstra"
       }
+
+      # Required tags for Cluster Autoscaler auto-discovery
+      tags = {
+        "k8s.io/cluster-autoscaler/enabled"                        = "true"
+        "k8s.io/cluster-autoscaler/${var.env}-telstra-eks"         = "owned"
+      }
     }
   }
 

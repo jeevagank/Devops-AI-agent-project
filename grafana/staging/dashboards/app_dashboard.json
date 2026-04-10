@@ -1,0 +1,152 @@
+{
+  "title": "Microservice Application Metrics",
+  "uid": "telstra-app-staging",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "env",
+        "type": "constant",
+        "query": "staging",
+        "hide": 1
+      },
+      {
+        "name": "namespace",
+        "label": "Microservice (Namespace)",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(kube_pod_info{namespace=~'microservice.*'}, namespace)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "microservice.*"
+      },
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(kube_service_info{namespace=~'$namespace'}, service)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{namespace=~'$namespace'}[5m])) by (namespace, service)",
+          "legendFormat": "{{ namespace }}/{{ service }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 2,
+      "title": "Error Rate %",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{namespace=~'$namespace', status=~'5..'}[5m])) by (namespace, service) / sum(rate(http_requests_total{namespace=~'$namespace'}[5m])) by (namespace, service) * 100",
+          "legendFormat": "{{ namespace }}/{{ service }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "p50 / p95 / p99 Latency",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=~'$namespace'}[5m])) by (le, namespace, service))",
+          "legendFormat": "p50 {{ namespace }}/{{ service }}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=~'$namespace'}[5m])) by (le, namespace, service))",
+          "legendFormat": "p95 {{ namespace }}/{{ service }}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace=~'$namespace'}[5m])) by (le, namespace, service))",
+          "legendFormat": "p99 {{ namespace }}/{{ service }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 4,
+      "title": "Pod Restart Count (1h)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=~'$namespace'}[1h])) by (namespace, pod)",
+          "legendFormat": "{{ namespace }}/{{ pod }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Pod Ready / Not Ready",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_ready{condition='true', namespace=~'$namespace'}) by (namespace)",
+          "legendFormat": "Ready — {{ namespace }}"
+        },
+        {
+          "expr": "sum(kube_pod_status_ready{condition='false', namespace=~'$namespace'}) by (namespace)",
+          "legendFormat": "Not Ready — {{ namespace }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 6,
+      "title": "HPA Current vs Max Replicas",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=~'$namespace'}",
+          "legendFormat": "current — {{ namespace }}/{{ horizontalpodautoscaler }}"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=~'$namespace'}",
+          "legendFormat": "max — {{ namespace }}/{{ horizontalpodautoscaler }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    }
+  ]
+}

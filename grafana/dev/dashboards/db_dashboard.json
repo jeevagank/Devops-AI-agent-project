@@ -1,0 +1,125 @@
+{
+  "title": "Aurora PostgreSQL Metrics",
+  "uid": "telstra-db-dev",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-3h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "env",
+        "type": "constant",
+        "query": "dev",
+        "hide": 1
+      },
+      {
+        "name": "dbinstance",
+        "label": "DB Instance",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(aws_rds_cpu_utilization_average, dbinstance_identifier)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Aurora CPU Utilization %",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_cpu_utilization_average{dbinstance_identifier=~'$dbinstance'}",
+          "legendFormat": "{{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "id": 2,
+      "title": "Aurora DB Connections",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_database_connections_average{dbinstance_identifier=~'$dbinstance'}",
+          "legendFormat": "{{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 3,
+      "title": "Aurora Replica Lag (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_aurora_replica_lag_average{dbinstance_identifier=~'$dbinstance'}",
+          "legendFormat": "{{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 5000 }] }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Aurora Global DB Replication Lag (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_aurora_global_db_replication_lag_milliseconds",
+          "legendFormat": "Global DB Lag (Sydney → Singapore)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 2000 }] }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Aurora Free Storage (GB)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_free_storage_space_average{dbinstance_identifier=~'$dbinstance'} / 1073741824",
+          "legendFormat": "{{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "GB" } }
+    },
+    {
+      "id": 6,
+      "title": "Aurora Freeable Memory (GB)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_freeable_memory_average{dbinstance_identifier=~'$dbinstance'} / 1073741824",
+          "legendFormat": "{{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "GB" } }
+    }
+  ]
+}

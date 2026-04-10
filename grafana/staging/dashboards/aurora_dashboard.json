@@ -1,0 +1,144 @@
+{
+  "title": "Aurora Global DB & DR",
+  "uid": "telstra-aurora-staging",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-3h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "env",
+        "type": "constant",
+        "query": "staging",
+        "hide": 1
+      },
+      {
+        "name": "primary_region",
+        "type": "constant",
+        "query": "ap-southeast-2",
+        "label": "Primary Region",
+        "hide": 0
+      },
+      {
+        "name": "dr_region",
+        "type": "constant",
+        "query": "ap-southeast-1",
+        "label": "DR Region",
+        "hide": 0
+      },
+      {
+        "name": "dbinstance",
+        "label": "DB Instance",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(aws_rds_cpu_utilization_average, dbinstance_identifier)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Global DB Replication Lag — Sydney → Singapore (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_aurora_global_db_replication_lag_milliseconds",
+          "legendFormat": "Replication Lag (ap-southeast-2 → ap-southeast-1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 2000 }] }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Primary CPU Utilization %",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_cpu_utilization_average{dbinstance_identifier=~'prod-telstra.*'}",
+          "legendFormat": "Primary — {{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "id": 3,
+      "title": "DR Replica CPU Utilization %",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_cpu_utilization_average{dbinstance_identifier=~'dr-telstra.*'}",
+          "legendFormat": "DR — {{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "id": 4,
+      "title": "Primary DB Connections",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_database_connections_average{dbinstance_identifier=~'prod-telstra.*'}",
+          "legendFormat": "{{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Aurora Replica Lag — Read Replicas (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_aurora_replica_lag_average{dbinstance_identifier=~'$dbinstance'}",
+          "legendFormat": "{{ dbinstance_identifier }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 5000 }] }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "DR RPO Status",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 24, "w": 8, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "aws_rds_aurora_global_db_replication_lag_milliseconds < 2000",
+          "legendFormat": "RPO OK (< 2s)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      }
+    }
+  ]
+}
