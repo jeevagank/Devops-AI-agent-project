@@ -1,0 +1,11 @@
+apiVersion: v2
+name: jenkins
+description: Jenkins CI/CD server deployed on EKS via kube-prometheus-stack pattern
+type: application
+version: 0.1.0
+appVersion: "2.462.3"
+
+dependencies:
+  - name: jenkins
+    version: "5.7.0"
+    repository: "https://charts.jenkins.io"

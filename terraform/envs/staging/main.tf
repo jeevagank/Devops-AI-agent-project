@@ -176,6 +176,37 @@ module "alb" {
   acm_certificate_arn = var.acm_certificate_arn
 }
 
+# ── Jenkins IRSA Role ─────────────────────────────────────────────────────────
+
+data "aws_iam_policy_document" "jenkins_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [module.eks.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:jenkins:jenkins"]
+    }
+  }
+}
+
+resource "aws_iam_role" "jenkins" {
+  name               = "staging-telstra-jenkins"
+  assume_role_policy = data.aws_iam_policy_document.jenkins_assume.json
+  tags = { Environment = "staging", Project = "telstra", ManagedBy = "terraform" }
+}
+
+resource "aws_iam_role_policy_attachment" "jenkins_ecr" {
+  role       = aws_iam_role.jenkins.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
+output "jenkins_irsa_role_arn" { value = aws_iam_role.jenkins.arn }
+
 # ── Variables ──────────────────────────────────────────────────────────────────
 
 variable "acm_certificate_arn" {

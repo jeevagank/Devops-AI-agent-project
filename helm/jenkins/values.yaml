@@ -1,0 +1,164 @@
+jenkins:
+  controller:
+    image: jenkins/jenkins
+    tag: "2.462.3-lts"
+
+    # ── Admin credentials from Kubernetes secret ──────────────────────────────
+    adminSecret: true
+    adminUser: "admin"
+    existingSecret: "jenkins-admin-secret"
+    adminPasswordKey: "jenkins-admin-password"
+
+    # ── JVM tuning for container awareness ────────────────────────────────────
+    javaOpts: >-
+      -XX:+UseContainerSupport
+      -XX:MaxRAMPercentage=75.0
+      -Dhudson.slaves.NodeProvisioner.initialDelay=0
+
+    # ── IRSA annotation — Jenkins pod assumes this role for ECR/EKS access ───
+    serviceAccount:
+      create: true
+      name: jenkins
+      annotations:
+        eks.amazonaws.com/role-arn: "${JENKINS_IRSA_ROLE_ARN}"
+
+    # ── Required plugins ──────────────────────────────────────────────────────
+    installPlugins:
+      - kubernetes:4253.v7700d91739e5
+      - workflow-aggregator:600.vb_57cdd26fdd7
+      - git:5.4.1
+      - configuration-as-code:1850.va_a_8c31d3158b
+      - amazon-ecr:1.114.vf472e4e3a_e6d
+      - aws-credentials:231.v08a_59f17d742
+      - pipeline-aws:1.43
+      - sonar:2.17.2
+      - blueocean:1.27.14
+      - docker-workflow:580.vc0c340686b_54
+      - credentials-binding:677.vdc24b_87a_b_220
+      - timestamper:1.27
+      - ws-cleanup:0.46
+      - junit:1265.v65b_14fa_f12f0
+      - pipeline-stage-view:2.34
+      - github-branch-source:1787.v8b_8cd49a_f8f1
+      - kubernetes-credentials-provider:1.262.v2670ef7ea_0c5
+
+    # ── Resources ─────────────────────────────────────────────────────────────
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+
+    # ── Persistence ───────────────────────────────────────────────────────────
+    persistence:
+      enabled: true
+      storageClass: gp3
+      size: 50Gi
+
+    # ── Service ───────────────────────────────────────────────────────────────
+    serviceType: ClusterIP
+    servicePort: 8080
+
+    # ── Ingress ───────────────────────────────────────────────────────────────
+    ingress:
+      enabled: true
+      ingressClassName: alb
+      annotations:
+        alb.ingress.kubernetes.io/scheme: internal
+        alb.ingress.kubernetes.io/target-type: ip
+        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+        alb.ingress.kubernetes.io/ssl-redirect: "443"
+      hosts:
+        - host: jenkins.internal.telstra.com
+          paths:
+            - path: /
+              pathType: Prefix
+
+    # ── Security context — non-root ───────────────────────────────────────────
+    podSecurityContextOverride:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: false
+      capabilities:
+        drop:
+          - ALL
+
+    # ── Liveness and readiness probes ─────────────────────────────────────────
+    healthProbes: true
+    livenessProbe:
+      httpGet:
+        path: /login
+        port: 8080
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      failureThreshold: 5
+    readinessProbe:
+      httpGet:
+        path: /login
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 3
+
+  # ── Kubernetes agent pod template ──────────────────────────────────────────
+  # Each pipeline run spins up a fresh agent pod on EKS,
+  # runs all stages, then destroys the pod.
+  agent:
+    enabled: true
+    namespace: jenkins
+    image: jenkins/inbound-agent
+    tag: "3261.v9c670a_4748a_9-1"
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+    podTemplates:
+      # ── Default agent with Docker, AWS CLI, kubectl, Trivy, cosign ──────────
+      default: |
+        - name: default
+          label: default-agent
+          serviceAccount: jenkins
+          containers:
+            - name: jnlp
+              image: jenkins/inbound-agent:3261.v9c670a_4748a_9-1
+              resourceRequestCpu: "200m"
+              resourceRequestMemory: "256Mi"
+              resourceLimitCpu: "500m"
+              resourceLimitMemory: "512Mi"
+            - name: docker
+              image: docker:24-dind
+              privileged: true
+              resourceRequestCpu: "200m"
+              resourceRequestMemory: "256Mi"
+              resourceLimitCpu: "1"
+              resourceLimitMemory: "1Gi"
+              envVars:
+                - envVar:
+                    key: DOCKER_TLS_CERTDIR
+                    value: ""
+            - name: tools
+              image: alpine/k8s:1.29.2
+              command: sleep
+              args: "99d"
+              resourceRequestCpu: "100m"
+              resourceRequestMemory: "128Mi"
+              resourceLimitCpu: "500m"
+              resourceLimitMemory: "512Mi"
+          volumes:
+            - emptyDirVolume:
+                mountPath: /var/lib/docker
+                memory: false
+
+  # ── Namespace ─────────────────────────────────────────────────────────────
+  namespaceOverride: jenkins

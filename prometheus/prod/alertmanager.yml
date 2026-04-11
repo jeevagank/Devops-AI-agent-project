@@ -1,0 +1,90 @@
+alertmanager:
+  enabled: true
+
+  config:
+    global:
+      resolve_timeout: 5m
+      slack_api_url: "${SLACK_WEBHOOK_URL}"
+      pagerduty_url: "https://events.pagerduty.com/v2/enqueue"
+
+    templates:
+      - /etc/alertmanager/config/*.tmpl
+
+    route:
+      group_by: ["alertname", "namespace", "env"]
+      group_wait: 15s
+      group_interval: 2m
+      repeat_interval: 1h
+      receiver: slack-prod-warning
+      routes:
+        - matchers:
+            - severity = critical
+          receiver: pagerduty-prod-critical
+          continue: true
+        - matchers:
+            - severity = critical
+          receiver: slack-prod-critical
+          continue: false
+        - matchers:
+            - severity = warning
+          receiver: slack-prod-warning
+          continue: false
+
+    receivers:
+      - name: slack-prod-warning
+        slack_configs:
+          - channel: "#alerts-prod"
+            username: "Prometheus Prod"
+            icon_emoji: ":warning:"
+            send_resolved: true
+            title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+            text: |
+              *Env:* prod
+              *Alert:* {{ .CommonLabels.alertname }}
+              *Severity:* {{ .CommonLabels.severity }}
+              {{ range .Alerts }}
+              *Summary:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              {{ end }}
+
+      - name: slack-prod-critical
+        slack_configs:
+          - channel: "#alerts-prod-critical"
+            username: "Prometheus Prod"
+            icon_emoji: ":rotating_light:"
+            send_resolved: true
+            title: '[CRITICAL] {{ .CommonLabels.alertname }}'
+            text: |
+              *Env:* prod
+              *Alert:* {{ .CommonLabels.alertname }}
+              {{ range .Alerts }}
+              *Summary:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              {{ end }}
+
+      - name: pagerduty-prod-critical
+        pagerduty_configs:
+          - routing_key: "${PAGERDUTY_PROD_KEY}"
+            severity: critical
+            description: '{{ .CommonLabels.alertname }} — {{ .CommonAnnotations.summary }}'
+            details:
+              env: prod
+              cluster: prod-telstra-eks
+              description: '{{ .CommonAnnotations.description }}'
+
+    inhibit_rules:
+      - source_matchers:
+          - severity = critical
+        target_matchers:
+          - severity = warning
+        equal: ["alertname", "namespace"]
+
+  alertmanagerSpec:
+    replicas: 3
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
