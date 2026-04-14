@@ -24,7 +24,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: microservice15
-          image: ACCOUNT_ID.dkr.ecr.ap-southeast-2.amazonaws.com/microservice15:latest
+          image: YOUR_AWS_ACCOUNT_ID.dkr.ecr.ap-southeast-2.amazonaws.com/microservice15:DEPLOY_TAG
           ports:
             - containerPort: 8080
           resources:

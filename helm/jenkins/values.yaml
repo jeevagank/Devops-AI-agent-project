@@ -124,7 +124,10 @@ jenkins:
         memory: 1Gi
 
     podTemplates:
-      # ── Default agent with Docker, AWS CLI, kubectl, Trivy, cosign ──────────
+      # ── Default agent: Kaniko (rootless image builds) + tools (kubectl/helm/AWS) ──
+      # docker:dind removed — it requires privileged:true which allows container
+      # escape to the EC2 node kernel. Kaniko builds images in user-space with
+      # no privilege escalation required.
       default: |
         - name: default
           label: default-agent
@@ -136,17 +139,22 @@ jenkins:
               resourceRequestMemory: "256Mi"
               resourceLimitCpu: "500m"
               resourceLimitMemory: "512Mi"
-            - name: docker
-              image: docker:24-dind
-              privileged: true
-              resourceRequestCpu: "200m"
-              resourceRequestMemory: "256Mi"
-              resourceLimitCpu: "1"
-              resourceLimitMemory: "1Gi"
+            - name: kaniko
+              image: gcr.io/kaniko-project/executor:v1.23.0-debug
+              command: sleep
+              args: "99d"
+              resourceRequestCpu: "500m"
+              resourceRequestMemory: "512Mi"
+              resourceLimitCpu: "2"
+              resourceLimitMemory: "2Gi"
+              securityContext:
+                runAsUser: 0
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
               envVars:
                 - envVar:
-                    key: DOCKER_TLS_CERTDIR
-                    value: ""
+                    key: DOCKER_CONFIG
+                    value: /kaniko/.docker
             - name: tools
               image: alpine/k8s:1.29.2
               command: sleep
@@ -155,9 +163,13 @@ jenkins:
               resourceRequestMemory: "128Mi"
               resourceLimitCpu: "500m"
               resourceLimitMemory: "512Mi"
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
           volumes:
             - emptyDirVolume:
-                mountPath: /var/lib/docker
+                mountPath: /kaniko/.docker
                 memory: false
 
   # ── Namespace ─────────────────────────────────────────────────────────────

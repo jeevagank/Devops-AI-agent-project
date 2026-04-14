@@ -202,10 +202,28 @@ resource "aws_iam_role" "jenkins_deploy_dev" {
   tags = { Environment = "dev", Project = "telstra", ManagedBy = "terraform" }
 }
 
+# Minimal policy: only DescribeCluster to generate kubeconfig.
+# Actual deploy permissions are controlled by Kubernetes RBAC in each target cluster.
+resource "aws_iam_policy" "jenkins_deploy_dev" {
+  provider    = aws.dev
+  name        = "dev-telstra-jenkins-deploy-policy"
+  description = "Allows Jenkins to fetch EKS kubeconfig for dev cluster only"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "EKSDescribeOnly"
+      Effect   = "Allow"
+      Action   = ["eks:DescribeCluster"]
+      Resource = "arn:aws:eks:ap-southeast-2:${var.dev_account_id}:cluster/dev-telstra-eks"
+    }]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "jenkins_deploy_dev_eks" {
   provider   = aws.dev
   role       = aws_iam_role.jenkins_deploy_dev.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  policy_arn = aws_iam_policy.jenkins_deploy_dev.arn
 }
 
 resource "aws_iam_role" "jenkins_deploy_staging" {
@@ -224,10 +242,26 @@ resource "aws_iam_role" "jenkins_deploy_staging" {
   tags = { Environment = "staging", Project = "telstra", ManagedBy = "terraform" }
 }
 
+resource "aws_iam_policy" "jenkins_deploy_staging" {
+  provider    = aws.staging
+  name        = "staging-telstra-jenkins-deploy-policy"
+  description = "Allows Jenkins to fetch EKS kubeconfig for staging cluster only"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "EKSDescribeOnly"
+      Effect   = "Allow"
+      Action   = ["eks:DescribeCluster"]
+      Resource = "arn:aws:eks:ap-southeast-2:${var.staging_account_id}:cluster/staging-telstra-eks"
+    }]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "jenkins_deploy_staging_eks" {
   provider   = aws.staging
   role       = aws_iam_role.jenkins_deploy_staging.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  policy_arn = aws_iam_policy.jenkins_deploy_staging.arn
 }
 
 resource "aws_iam_role" "jenkins_deploy_prod" {
@@ -246,10 +280,26 @@ resource "aws_iam_role" "jenkins_deploy_prod" {
   tags = { Environment = "prod", Project = "telstra", ManagedBy = "terraform" }
 }
 
+resource "aws_iam_policy" "jenkins_deploy_prod" {
+  provider    = aws.prod
+  name        = "prod-telstra-jenkins-deploy-policy"
+  description = "Allows Jenkins to fetch EKS kubeconfig for prod cluster only"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "EKSDescribeOnly"
+      Effect   = "Allow"
+      Action   = ["eks:DescribeCluster"]
+      Resource = "arn:aws:eks:ap-southeast-2:${var.prod_account_id}:cluster/prod-telstra-eks"
+    }]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "jenkins_deploy_prod_eks" {
   provider   = aws.prod
   role       = aws_iam_role.jenkins_deploy_prod.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  policy_arn = aws_iam_policy.jenkins_deploy_prod.arn
 }
 
 # ── Additional providers for cross-account resources ──────────────────────────

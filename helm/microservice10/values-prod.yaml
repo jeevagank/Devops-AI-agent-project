@@ -1,8 +1,5 @@
 replicaCount: 3
 
-image:
-  tag: prod-latest
-
 resources:
   requests:
     cpu: 200m

@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            label 'default-agent'
+            defaultContainer 'tools'
+        }
+    }
 
     environment {
         APP_NAME      = "microservice12"
@@ -42,42 +47,53 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build & Push') {
+            // Kaniko builds the image and pushes to ECR in one step — no Docker daemon,
+            // no privileged container. IRSA provides ECR credentials automatically.
             steps {
-                sh """
-                    docker build \\
-                        --no-cache \\
-                        --build-arg BUILD_DATE=\$(date -u +%Y-%m-%dT%H:%M:%SZ) \\
-                        --build-arg GIT_COMMIT=${IMAGE_TAG} \\
-                        --build-arg DEPLOY_ENV=${env.DEPLOY_ENV} \\
-                        -t ${IMAGE_NAME}:${IMAGE_TAG} \\
-                        -t ${IMAGE_NAME}:latest \\
-                        docker/${APP_NAME}/
-                """
+                container('kaniko') {
+                    sh """
+                        /kaniko/executor \\
+                            --context=dir://docker/${APP_NAME} \\
+                            --dockerfile=docker/${APP_NAME}/Dockerfile \\
+                            --destination=${IMAGE_NAME}:${IMAGE_TAG} \\
+                            --build-arg BUILD_DATE=\$(date -u +%Y-%m-%dT%H:%M:%SZ) \\
+                            --build-arg GIT_COMMIT=${IMAGE_TAG} \\
+                            --build-arg DEPLOY_ENV=${env.DEPLOY_ENV} \\
+                            --cache=true \\
+                            --cache-repo=${ECR_REGISTRY}/kaniko-cache \\
+                            --compressed-caching=false \\
+                            --snapshot-mode=redo
+                    """
+                }
             }
         }
 
         stage('Trivy Image Scan') {
             steps {
-                sh """
-                    trivy image \\
-                        --exit-code 1 \\
-                        --severity HIGH,CRITICAL \\
-                        --no-progress \\
-                        --format table \\
-                        ${IMAGE_NAME}:${IMAGE_TAG}
-                """
+                container('tools') {
+                    sh """
+                        trivy image \\
+                            --exit-code 1 \\
+                            --severity HIGH,CRITICAL \\
+                            --no-progress \\
+                            --format table \\
+                            ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
+                }
             }
             post {
                 always {
-                    sh """
-                        trivy image \\
-                            --exit-code 0 \\
-                            --severity HIGH,CRITICAL \\
-                            --format json \\
-                            --output trivy-report-${APP_NAME}.json \\
-                            ${IMAGE_NAME}:${IMAGE_TAG}
-                    """
+                    container('tools') {
+                        sh """
+                            trivy image \\
+                                --exit-code 0 \\
+                                --severity HIGH,CRITICAL \\
+                                --format json \\
+                                --output trivy-report-${APP_NAME}.json \\
+                                ${IMAGE_NAME}:${IMAGE_TAG}
+                        """
+                    }
                     archiveArtifacts allowEmptyArchive: true, artifacts: "trivy-report-${APP_NAME}.json"
                 }
             }
@@ -85,7 +101,18 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh "docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} python -m pytest tests/ -v --junitxml=test-results.xml"
+                container('tools') {
+                    // Run tests in an ephemeral pod on EKS — no local Docker needed.
+                    sh """
+                        kubectl run test-${APP_NAME}-${IMAGE_TAG} \\
+                            --image=${IMAGE_NAME}:${IMAGE_TAG} \\
+                            --restart=Never \\
+                            --rm \\
+                            --attach \\
+                            --namespace=jenkins \\
+                            -- python -m pytest tests/ -v --junitxml=test-results.xml
+                    """
+                }
             }
             post {
                 always {
@@ -115,18 +142,8 @@ pipeline {
             }
         }
 
-        stage('Push to ECR') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-credentials']]) {
-                    sh """
-                        aws ecr get-login-password --region ${AWS_REGION} \\
-                            | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        docker push ${IMAGE_NAME}:latest
-                    """
-                }
-            }
-        }
+        // Push to ECR is handled by Kaniko in the Build & Push stage above.
+        // This stage is kept as a checkpoint to confirm the image exists in ECR.
 
         stage('Sign Image') {
             steps {
@@ -152,8 +169,9 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-base-credentials']]) {
-                    sh """
+                        sh """
+                        # IRSA provides credentials automatically via the pod service account.
+                        # No static credentials needed — assume the cross-account deploy role directly.
                         CREDS=\$(aws sts assume-role \\
                             --role-arn ${env.AWS_ROLE_ARN} \\
                             --role-session-name jenkins-${APP_NAME}-${IMAGE_TAG} \\
@@ -165,19 +183,22 @@ pipeline {
                         export AWS_SESSION_TOKEN=\$(echo \$CREDS | awk '{print \$3}')
 
                         aws eks update-kubeconfig --region ${AWS_REGION} --name ${env.EKS_CLUSTER}
-                        kubectl set image deployment/${APP_NAME} \\
-                            ${APP_NAME}=${IMAGE_NAME}:${IMAGE_TAG} \\
-                            -n ${env.K8S_NAMESPACE}
-                        kubectl rollout status deployment/${APP_NAME} -n ${env.K8S_NAMESPACE} --timeout=5m
+                        helm upgrade --install ${APP_NAME} ./helm/${APP_NAME} \\
+                            --namespace ${env.K8S_NAMESPACE} \\
+                            --create-namespace \\
+                            --set image.registry=${ECR_REGISTRY} \\
+                            --set image.tag=${IMAGE_TAG} \\
+                            --values ./helm/${APP_NAME}/values-${env.DEPLOY_ENV}.yaml \\
+                            --atomic \\
+                            --timeout 5m
                     """
-                }
             }
         }
     }
 
     post {
         always {
-            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest || true"
+            // No local image cleanup needed — Kaniko pushes directly to ECR.
             cleanWs()
         }
         failure {

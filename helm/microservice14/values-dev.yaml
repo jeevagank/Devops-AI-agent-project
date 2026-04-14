@@ -1,8 +1,5 @@
 replicaCount: 1
 
-image:
-  tag: dev-latest
-
 resources:
   requests:
     cpu: 50m

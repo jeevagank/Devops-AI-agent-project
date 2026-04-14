@@ -1,8 +1,11 @@
 replicaCount: 2
 
 image:
-  repository: ACCOUNT_ID.dkr.ecr.ap-southeast-2.amazonaws.com/microservice3
-  tag: latest
+  # Set at deploy time: --set image.registry=<ACCOUNT_ID>.dkr.ecr.ap-southeast-2.amazonaws.com
+  registry: ""
+  repository: microservice3
+  # Must be an immutable tag (git SHA). Never use 'latest'.
+  tag: ""
   pullPolicy: IfNotPresent
 
 service:
