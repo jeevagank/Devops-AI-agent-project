@@ -1,9 +1,0 @@
-apiVersion: integreatly.org/v1alpha1
-kind: GrafanaDashboard
-metadata:
-  name: {{ .Values.image.repository }}
-spec:
-  datasources:
-    - name: Prometheus
-      url: http://prometheus:9090
-      type: prometheus
