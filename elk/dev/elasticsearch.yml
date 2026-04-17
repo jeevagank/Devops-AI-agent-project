@@ -1,4 +1,4 @@
-cluster.name: telstra-dev
+cluster.name: jeevagan-dev
 node.name: es-dev-node-1
 node.roles: [master, data, ingest]
 

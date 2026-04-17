@@ -69,7 +69,7 @@ alertmanager:
             description: '{{ .CommonLabels.alertname }} — {{ .CommonAnnotations.summary }}'
             details:
               env: prod
-              cluster: prod-telstra-eks
+              cluster: prod-jeevagan-eks
               description: '{{ .CommonAnnotations.description }}'
 
     inhibit_rules:

@@ -1,6 +1,6 @@
 {
   "title": "Aurora PostgreSQL Metrics",
-  "uid": "telstra-db-dev",
+  "uid": "jeevagan-db-dev",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "1m",

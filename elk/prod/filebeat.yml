@@ -42,5 +42,5 @@ logging.files:
 
 fields:
   environment: prod
-  cluster: prod-telstra-eks
+  cluster: prod-jeevagan-eks
 fields_under_root: true

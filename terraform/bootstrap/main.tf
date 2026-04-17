@@ -28,7 +28,7 @@ variable "aws_account_id" {
 variable "project" {
   description = "Project tag applied to all resources"
   type        = string
-  default     = "telstra"
+  default     = "jeevagan"
 }
 
 locals {

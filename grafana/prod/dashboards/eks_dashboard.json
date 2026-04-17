@@ -1,6 +1,6 @@
 {
   "title": "EKS Node Metrics",
-  "uid": "telstra-eks-prod",
+  "uid": "jeevagan-eks-prod",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "30s",

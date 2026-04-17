@@ -4,7 +4,7 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = "prod"
-      Project     = "telstra"
+      Project     = "jeevagan"
       ManagedBy   = "terraform"
     }
   }
@@ -13,7 +13,7 @@ provider "aws" {
 # ── Security Groups ────────────────────────────────────────────────────────────
 
 resource "aws_security_group" "rds" {
-  name        = "prod-telstra-rds-sg"
+  name        = "prod-jeevagan-rds-sg"
   description = "Aurora RDS security group"
   vpc_id      = module.vpc.vpc_id
 
@@ -33,7 +33,7 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_security_group" "redis" {
-  name        = "prod-telstra-redis-sg"
+  name        = "prod-jeevagan-redis-sg"
   description = "ElastiCache Redis security group"
   vpc_id      = module.vpc.vpc_id
 
@@ -53,7 +53,7 @@ resource "aws_security_group" "redis" {
 }
 
 resource "aws_security_group" "msk" {
-  name        = "prod-telstra-msk-sg"
+  name        = "prod-jeevagan-msk-sg"
   description = "MSK Kafka security group"
   vpc_id      = module.vpc.vpc_id
 
@@ -73,7 +73,7 @@ resource "aws_security_group" "msk" {
 }
 
 resource "aws_security_group" "alb" {
-  name        = "prod-telstra-alb-sg"
+  name        = "prod-jeevagan-alb-sg"
   description = "ALB security group"
   vpc_id      = module.vpc.vpc_id
 
@@ -195,9 +195,9 @@ data "aws_iam_policy_document" "jenkins_assume" {
 }
 
 resource "aws_iam_role" "jenkins" {
-  name               = "prod-telstra-jenkins"
+  name               = "prod-jeevagan-jenkins"
   assume_role_policy = data.aws_iam_policy_document.jenkins_assume.json
-  tags = { Environment = "prod", Project = "telstra", ManagedBy = "terraform" }
+  tags = { Environment = "prod", Project = "jeevagan", ManagedBy = "terraform" }
 }
 
 resource "aws_iam_role_policy_attachment" "jenkins_ecr" {

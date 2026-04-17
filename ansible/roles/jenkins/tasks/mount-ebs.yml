@@ -1,0 +1,34 @@
+---
+- name: Check if EBS volume is already formatted
+  command: blkid /dev/xvdf
+  register: blkid_result
+  failed_when: false
+  changed_when: false
+
+- name: Format EBS volume as ext4 (only if not already formatted)
+  filesystem:
+    fstype: ext4
+    dev: /dev/xvdf
+  when: blkid_result.rc != 0
+
+- name: Create Jenkins home directory
+  file:
+    path: "{{ jenkins_home }}"
+    state: directory
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    mode: '0755'
+
+- name: Mount EBS volume to Jenkins home
+  mount:
+    path: "{{ jenkins_home }}"
+    src: /dev/xvdf
+    fstype: ext4
+    opts: defaults,nofail
+    state: mounted
+
+- name: Add EBS mount to fstab for persistence across reboots
+  lineinfile:
+    path: /etc/fstab
+    line: "/dev/xvdf  {{ jenkins_home }}  ext4  defaults,nofail  0  2"
+    state: present

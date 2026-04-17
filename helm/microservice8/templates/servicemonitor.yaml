@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Chart.Name }}
-    project: telstra
+    project: jeevagan
     release: kube-prometheus-stack
 spec:
   selector:

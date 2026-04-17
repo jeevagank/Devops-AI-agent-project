@@ -1,6 +1,6 @@
 {
   "title": "Microservice Application Metrics",
-  "uid": "telstra-app-prod",
+  "uid": "jeevagan-app-prod",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "30s",

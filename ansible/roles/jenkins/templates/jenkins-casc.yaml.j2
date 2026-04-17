@@ -1,0 +1,114 @@
+# Jenkins Configuration as Code (JCasC)
+# Rendered by Ansible — sensitive values pulled from AWS Secrets Manager.
+# Any manual change in the Jenkins UI will be overwritten on next Ansible run.
+
+jenkins:
+  systemMessage: "Jeevagan DevOps Jenkins — managed via JCasC. Do not configure manually."
+  numExecutors: 0          # Controller runs no builds — all work goes to EKS agent pods
+  mode: EXCLUSIVE
+  url: "{{ jenkins_url }}"
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: "${jenkins_admin_password}"   # Injected from Secrets Manager at startup
+
+  authorizationStrategy:
+    roleBased:
+      roles:
+        global:
+          - name: admin
+            permissions:
+              - Overall/Administer
+            assignments:
+              - admin
+
+# ── Credentials ────────────────────────────────────────────────────────────────
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              id: github-credentials
+              username: jeevagank
+              password: "{{ jenkins_github_token.stdout }}"
+              description: "GitHub token for repo access and image tag commits"
+
+          - string:
+              id: sonarqube-token
+              secret: "{{ jenkins_sonar_token.stdout }}"
+              description: "SonarQube analysis token"
+
+          - file:
+              id: cosign-private-key
+              fileName: cosign.key
+              secretBytes: "{{ jenkins_cosign_key.stdout | b64encode }}"
+              description: "Cosign private key for image signing"
+
+          - aws:
+              id: ecr-registry-url
+              description: "ECR registry base URL"
+              # EC2 instance role provides ECR credentials automatically
+              # This credential stores only the registry URL (not keys)
+
+# ── Kubernetes cloud — agent pods run on tools EKS ────────────────────────────
+clouds:
+  - kubernetes:
+      name: tools-eks
+      serverUrl: ""           # Empty = use in-cluster config (kubeconfig on EC2 is used)
+      namespace: jenkins
+      jenkinsUrl: "http://jenkins.internal.jeevagan.com:{{ jenkins_port }}"
+      connectTimeout: 60
+      readTimeout: 60
+      containerCapStr: 20
+      podRetention: never     # Destroy agent pod immediately after pipeline completes
+      templates:
+        - name: default-agent
+          label: default-agent
+          namespace: jenkins
+          serviceAccount: jenkins
+          containers:
+            - name: jnlp
+              image: jenkins/inbound-agent:3261.v9c670a_4748a_9-1
+              resourceRequestCpu: "200m"
+              resourceRequestMemory: "256Mi"
+              resourceLimitCpu: "500m"
+              resourceLimitMemory: "512Mi"
+
+            - name: kaniko
+              image: gcr.io/kaniko-project/executor:v1.23.0-debug
+              command: sleep
+              args: "99d"
+              resourceRequestCpu: "500m"
+              resourceRequestMemory: "512Mi"
+              resourceLimitCpu: "2"
+              resourceLimitMemory: "2Gi"
+              envVars:
+                - envVar:
+                    key: DOCKER_CONFIG
+                    value: /kaniko/.docker
+
+            - name: tools
+              image: alpine/k8s:1.29.2
+              command: sleep
+              args: "99d"
+              resourceRequestCpu: "100m"
+              resourceRequestMemory: "128Mi"
+              resourceLimitCpu: "500m"
+              resourceLimitMemory: "512Mi"
+
+          volumes:
+            - emptyDirVolume:
+                mountPath: /kaniko/.docker
+                memory: false
+
+# ── SonarQube ──────────────────────────────────────────────────────────────────
+unclassified:
+  sonarGlobalConfiguration:
+    buildWrapperEnabled: true
+    installations:
+      - name: SonarQube
+        serverUrl: "https://sonarqube.internal.jeevagan.com"
+        credentialsId: sonarqube-token

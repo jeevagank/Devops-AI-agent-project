@@ -4,7 +4,7 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = "tools"
-      Project     = "telstra"
+      Project     = "jeevagan"
       ManagedBy   = "terraform"
     }
   }
@@ -18,7 +18,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
-  name = "tools-telstra-vpc"
+  name = "tools-jeevagan-vpc"
   cidr = "10.4.0.0/16"
 
   azs             = ["ap-southeast-2a", "ap-southeast-2b"]
@@ -38,12 +38,12 @@ module "vpc" {
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb"          = "1"
-    "kubernetes.io/cluster/tools-telstra-eks"  = "shared"
+    "kubernetes.io/cluster/tools-jeevagan-eks"  = "shared"
   }
 
   public_subnet_tags = {
     "kubernetes.io/role/elb"                   = "1"
-    "kubernetes.io/cluster/tools-telstra-eks"  = "shared"
+    "kubernetes.io/cluster/tools-jeevagan-eks"  = "shared"
   }
 }
 
@@ -55,7 +55,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "20.0.0"
 
-  cluster_name    = "tools-telstra-eks"
+  cluster_name    = "tools-jeevagan-eks"
   cluster_version = "1.29"
 
   vpc_id     = module.vpc.vpc_id
@@ -73,19 +73,19 @@ module "eks" {
 
       tags = {
         "k8s.io/cluster-autoscaler/enabled"               = "true"
-        "k8s.io/cluster-autoscaler/tools-telstra-eks"     = "owned"
+        "k8s.io/cluster-autoscaler/tools-jeevagan-eks"     = "owned"
       }
 
       labels = {
         Environment = "tools"
-        Project     = "telstra"
+        Project     = "jeevagan"
       }
     }
   }
 
   tags = {
     Environment = "tools"
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
@@ -116,12 +116,12 @@ data "aws_iam_policy_document" "jenkins_assume" {
 }
 
 resource "aws_iam_role" "jenkins" {
-  name               = "tools-telstra-jenkins"
+  name               = "tools-jeevagan-jenkins"
   assume_role_policy = data.aws_iam_policy_document.jenkins_assume.json
 
   tags = {
     Environment = "tools"
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
@@ -132,7 +132,7 @@ resource "aws_iam_role" "jenkins" {
 # 2. Assume cross-account roles in dev/staging/prod for deployments
 
 resource "aws_iam_policy" "jenkins" {
-  name        = "tools-telstra-jenkins-policy"
+  name        = "tools-jeevagan-jenkins-policy"
   description = "Jenkins IRSA policy — ECR access + cross-account assume role"
 
   policy = jsonencode({
@@ -159,19 +159,19 @@ resource "aws_iam_policy" "jenkins" {
         Sid    = "AssumeRoleDev"
         Effect = "Allow"
         Action = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${var.dev_account_id}:role/dev-telstra-jenkins-deploy"
+        Resource = "arn:aws:iam::${var.dev_account_id}:role/dev-jeevagan-jenkins-deploy"
       },
       {
         Sid    = "AssumeRoleStaging"
         Effect = "Allow"
         Action = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${var.staging_account_id}:role/staging-telstra-jenkins-deploy"
+        Resource = "arn:aws:iam::${var.staging_account_id}:role/staging-jeevagan-jenkins-deploy"
       },
       {
         Sid    = "AssumeRoleProd"
         Effect = "Allow"
         Action = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${var.prod_account_id}:role/prod-telstra-jenkins-deploy"
+        Resource = "arn:aws:iam::${var.prod_account_id}:role/prod-jeevagan-jenkins-deploy"
       }
     ]
   })
@@ -188,7 +188,7 @@ resource "aws_iam_role_policy_attachment" "jenkins" {
 
 resource "aws_iam_role" "jenkins_deploy_dev" {
   provider = aws.dev
-  name     = "dev-telstra-jenkins-deploy"
+  name     = "dev-jeevagan-jenkins-deploy"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -199,14 +199,14 @@ resource "aws_iam_role" "jenkins_deploy_dev" {
     }]
   })
 
-  tags = { Environment = "dev", Project = "telstra", ManagedBy = "terraform" }
+  tags = { Environment = "dev", Project = "jeevagan", ManagedBy = "terraform" }
 }
 
 # Minimal policy: only DescribeCluster to generate kubeconfig.
 # Actual deploy permissions are controlled by Kubernetes RBAC in each target cluster.
 resource "aws_iam_policy" "jenkins_deploy_dev" {
   provider    = aws.dev
-  name        = "dev-telstra-jenkins-deploy-policy"
+  name        = "dev-jeevagan-jenkins-deploy-policy"
   description = "Allows Jenkins to fetch EKS kubeconfig for dev cluster only"
 
   policy = jsonencode({
@@ -215,7 +215,7 @@ resource "aws_iam_policy" "jenkins_deploy_dev" {
       Sid      = "EKSDescribeOnly"
       Effect   = "Allow"
       Action   = ["eks:DescribeCluster"]
-      Resource = "arn:aws:eks:ap-southeast-2:${var.dev_account_id}:cluster/dev-telstra-eks"
+      Resource = "arn:aws:eks:ap-southeast-2:${var.dev_account_id}:cluster/dev-jeevagan-eks"
     }]
   })
 }
@@ -228,7 +228,7 @@ resource "aws_iam_role_policy_attachment" "jenkins_deploy_dev_eks" {
 
 resource "aws_iam_role" "jenkins_deploy_staging" {
   provider = aws.staging
-  name     = "staging-telstra-jenkins-deploy"
+  name     = "staging-jeevagan-jenkins-deploy"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -239,12 +239,12 @@ resource "aws_iam_role" "jenkins_deploy_staging" {
     }]
   })
 
-  tags = { Environment = "staging", Project = "telstra", ManagedBy = "terraform" }
+  tags = { Environment = "staging", Project = "jeevagan", ManagedBy = "terraform" }
 }
 
 resource "aws_iam_policy" "jenkins_deploy_staging" {
   provider    = aws.staging
-  name        = "staging-telstra-jenkins-deploy-policy"
+  name        = "staging-jeevagan-jenkins-deploy-policy"
   description = "Allows Jenkins to fetch EKS kubeconfig for staging cluster only"
 
   policy = jsonencode({
@@ -253,7 +253,7 @@ resource "aws_iam_policy" "jenkins_deploy_staging" {
       Sid      = "EKSDescribeOnly"
       Effect   = "Allow"
       Action   = ["eks:DescribeCluster"]
-      Resource = "arn:aws:eks:ap-southeast-2:${var.staging_account_id}:cluster/staging-telstra-eks"
+      Resource = "arn:aws:eks:ap-southeast-2:${var.staging_account_id}:cluster/staging-jeevagan-eks"
     }]
   })
 }
@@ -266,7 +266,7 @@ resource "aws_iam_role_policy_attachment" "jenkins_deploy_staging_eks" {
 
 resource "aws_iam_role" "jenkins_deploy_prod" {
   provider = aws.prod
-  name     = "prod-telstra-jenkins-deploy"
+  name     = "prod-jeevagan-jenkins-deploy"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -277,12 +277,12 @@ resource "aws_iam_role" "jenkins_deploy_prod" {
     }]
   })
 
-  tags = { Environment = "prod", Project = "telstra", ManagedBy = "terraform" }
+  tags = { Environment = "prod", Project = "jeevagan", ManagedBy = "terraform" }
 }
 
 resource "aws_iam_policy" "jenkins_deploy_prod" {
   provider    = aws.prod
-  name        = "prod-telstra-jenkins-deploy-policy"
+  name        = "prod-jeevagan-jenkins-deploy-policy"
   description = "Allows Jenkins to fetch EKS kubeconfig for prod cluster only"
 
   policy = jsonencode({
@@ -291,7 +291,7 @@ resource "aws_iam_policy" "jenkins_deploy_prod" {
       Sid      = "EKSDescribeOnly"
       Effect   = "Allow"
       Action   = ["eks:DescribeCluster"]
-      Resource = "arn:aws:eks:ap-southeast-2:${var.prod_account_id}:cluster/prod-telstra-eks"
+      Resource = "arn:aws:eks:ap-southeast-2:${var.prod_account_id}:cluster/prod-jeevagan-eks"
     }]
   })
 }

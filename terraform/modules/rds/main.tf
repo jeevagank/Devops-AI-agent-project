@@ -1,5 +1,5 @@
 resource "aws_rds_cluster" "this" {
-  cluster_identifier      = "${var.env}-telstra-aurora"
+  cluster_identifier      = "${var.env}-jeevagan-aurora"
   engine                  = "aurora-postgresql"
   engine_version          = var.engine_version
   database_name           = var.database_name
@@ -17,14 +17,14 @@ resource "aws_rds_cluster" "this" {
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
 
 resource "aws_rds_cluster_instance" "this" {
   count              = var.instance_count
-  identifier         = "${var.env}-telstra-aurora-${count.index}"
+  identifier         = "${var.env}-jeevagan-aurora-${count.index}"
   cluster_identifier = aws_rds_cluster.this.id
   instance_class     = var.instance_class
   engine             = aws_rds_cluster.this.engine
@@ -32,18 +32,18 @@ resource "aws_rds_cluster_instance" "this" {
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
 
 resource "aws_db_subnet_group" "this" {
-  name       = "${var.env}-telstra-aurora-subnet-group"
+  name       = "${var.env}-jeevagan-aurora-subnet-group"
   subnet_ids = var.subnet_ids
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }

@@ -5,8 +5,8 @@ Triggers a managed failover of the Aurora Global DB from the primary region
 
 Invocation payload (optional):
 {
-    "global_cluster_identifier": "telstra-aurora-global",   # overrides env var
-    "target_db_cluster_identifier": "arn:aws:rds:ap-southeast-1:ACCOUNT:cluster:dr-telstra-aurora"
+    "global_cluster_identifier": "jeevagan-aurora-global",   # overrides env var
+    "target_db_cluster_identifier": "arn:aws:rds:ap-southeast-1:ACCOUNT:cluster:dr-jeevagan-aurora"
 }
 
 Environment variables:

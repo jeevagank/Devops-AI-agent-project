@@ -1,0 +1,30 @@
+# Variables for the Jenkins controller
+# Sensitive values are pulled from AWS Secrets Manager at runtime — not stored here.
+
+jenkins_version: "2.462.3"
+java_version: "17"
+jenkins_home: "/var/lib/jenkins"
+jenkins_port: 8080
+jenkins_url: "https://jenkins.internal.jeevagan.com"
+
+aws_region: "ap-southeast-2"
+tools_eks_cluster: "tools-jeevagan-eks"
+
+# Jenkins plugins to install
+jenkins_plugins:
+  - kubernetes:4253.v7700d91739e5
+  - workflow-aggregator:600.vb_57cdd26fdd7
+  - git:5.4.1
+  - configuration-as-code:1850.va_a_8c31d3158b
+  - amazon-ecr:1.114.vf472e4e3a_e6d
+  - aws-credentials:231.v08a_59f17d742
+  - pipeline-aws:1.43
+  - sonar:2.17.2
+  - blueocean:1.27.14
+  - credentials-binding:677.vdc24b_87a_b_220
+  - timestamper:1.27
+  - ws-cleanup:0.46
+  - junit:1265.v65b_14fa_f12f0
+  - github-branch-source:1787.v8b_8cd49a_f8f1
+  - kubernetes-credentials-provider:1.262.v2670ef7ea_0c5
+  - pipeline-stage-view:2.34

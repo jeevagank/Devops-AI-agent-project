@@ -13,7 +13,7 @@ hpa:
   maxReplicas: 5
 
 ingress:
-  host: microservice1.staging.internal.telstra.com
+  host: microservice1.staging.internal.jeevagan.com
 
 env:
   APP_ENV: staging

@@ -1,0 +1,31 @@
+---
+- name: Wait for Jenkins to be fully started
+  uri:
+    url: "http://localhost:{{ jenkins_port }}/login"
+    status_code: 200
+  register: jenkins_ready
+  until: jenkins_ready.status == 200
+  retries: 20
+  delay: 15
+
+- name: Get Jenkins admin password from AWS Secrets Manager
+  command: >
+    aws secretsmanager get-secret-value
+    --secret-id jenkins/admin-password
+    --query SecretString
+    --output text
+    --region {{ aws_region }}
+  register: jenkins_admin_password
+  no_log: true
+
+- name: Install Jenkins plugins
+  jenkins_plugin:
+    name: "{{ item.split(':')[0] }}"
+    version: "{{ item.split(':')[1] }}"
+    url: "http://localhost:{{ jenkins_port }}"
+    url_username: admin
+    url_password: "{{ jenkins_admin_password.stdout }}"
+    state: present
+    with_dependencies: true
+  loop: "{{ jenkins_plugins }}"
+  notify: Restart Jenkins

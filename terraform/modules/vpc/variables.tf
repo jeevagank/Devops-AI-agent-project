@@ -6,7 +6,7 @@ variable "env" {
 variable "project" {
   description = "Project name"
   type        = string
-  default     = "telstra"
+  default     = "jeevagan"
 }
 
 variable "vpc_cidr" {

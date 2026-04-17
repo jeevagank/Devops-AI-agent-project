@@ -29,17 +29,17 @@ pipeline {
                         case 'main':
                             env.DEPLOY_ENV    = 'prod'
                             env.AWS_ROLE_ARN  = credentials('aws-role-arn-prod')
-                            env.EKS_CLUSTER   = 'prod-telstra-eks'
+                            env.EKS_CLUSTER   = 'prod-jeevagan-eks'
                             break
                         case ~/release\/.*/:
                             env.DEPLOY_ENV    = 'staging'
                             env.AWS_ROLE_ARN  = credentials('aws-role-arn-staging')
-                            env.EKS_CLUSTER   = 'staging-telstra-eks'
+                            env.EKS_CLUSTER   = 'staging-jeevagan-eks'
                             break
                         default:
                             env.DEPLOY_ENV    = 'dev'
                             env.AWS_ROLE_ARN  = credentials('aws-role-arn-dev')
-                            env.EKS_CLUSTER   = 'dev-telstra-eks'
+                            env.EKS_CLUSTER   = 'dev-jeevagan-eks'
                     }
                     env.K8S_NAMESPACE = "${env.DEPLOY_ENV}-${APP_NAME}"
                     echo "Deploying ${APP_NAME}:${IMAGE_TAG} → ${env.DEPLOY_ENV} (${env.EKS_CLUSTER})"
@@ -160,7 +160,9 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS') {
+        stage('Update Image Tag in Git') {
+            // GitOps approach: Jenkins writes the new image tag back to values.yaml in Git.
+            // ArgoCD detects the Git change and deploys — no conflict between Jenkins and ArgoCD.
             when {
                 anyOf {
                     branch 'main'
@@ -169,30 +171,27 @@ pipeline {
                 }
             }
             steps {
-                        sh """
-                        # IRSA provides credentials automatically via the pod service account.
-                        # No static credentials needed — assume the cross-account deploy role directly.
-                        CREDS=\$(aws sts assume-role \\
-                            --role-arn ${env.AWS_ROLE_ARN} \\
-                            --role-session-name jenkins-${APP_NAME}-${IMAGE_TAG} \\
-                            --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \\
-                            --output text)
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-credentials',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_TOKEN'
+                )]) {
+                    sh """
+                        git config user.email "jenkins@jeevagan.internal"
+                        git config user.name "Jenkins"
 
-                        export AWS_ACCESS_KEY_ID=\$(echo \$CREDS | awk '{print \$1}')
-                        export AWS_SECRET_ACCESS_KEY=\$(echo \$CREDS | awk '{print \$2}')
-                        export AWS_SESSION_TOKEN=\$(echo \$CREDS | awk '{print \$3}')
+                        # Write the new image tag into the env-specific values file
+                        sed -i 's|^  tag:.*|  tag: "${IMAGE_TAG}"|' helm/${APP_NAME}/values-${env.DEPLOY_ENV}.yaml
+                        sed -i 's|^  registry:.*|  registry: "${ECR_REGISTRY}"|' helm/${APP_NAME}/values.yaml
 
-                        aws eks update-kubeconfig --region ${AWS_REGION} --name ${env.EKS_CLUSTER}
-                        helm upgrade --install ${APP_NAME} ./helm/${APP_NAME} \\
-                            --namespace ${env.K8S_NAMESPACE} \\
-                            --create-namespace \\
-                            --set image.registry=${ECR_REGISTRY} \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --values ./helm/${APP_NAME}/values-${env.DEPLOY_ENV}.yaml \\
-                            --atomic \\
-                            --timeout 5m
+                        git add helm/${APP_NAME}/values-${env.DEPLOY_ENV}.yaml helm/${APP_NAME}/values.yaml
+                        git commit -m "ci: update ${APP_NAME} image tag to ${IMAGE_TAG} for ${env.DEPLOY_ENV} [skip ci]"
+                        git push https://\${GIT_USER}:\${GIT_TOKEN}@github.com/jeevagank/Devops-AI-agent-project.git HEAD:${env.BRANCH_NAME}
                     """
+                }
             }
+            // ArgoCD detects this Git commit and automatically syncs the cluster.
+            // No direct helm upgrade from Jenkins — Git is the single source of truth.
         }
     }
 

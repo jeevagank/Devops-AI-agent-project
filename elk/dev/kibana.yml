@@ -1,6 +1,6 @@
 server.port: 5601
 server.host: "0.0.0.0"
-server.name: "telstra-kibana-dev"
+server.name: "jeevagan-kibana-dev"
 
 elasticsearch.hosts: ["http://elasticsearch-dev:9200"]
 elasticsearch.requestTimeout: 30000

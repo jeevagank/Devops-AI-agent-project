@@ -1,0 +1,9 @@
+jenkins_user: jenkins
+jenkins_group: jenkins
+jenkins_home: /var/lib/jenkins
+jenkins_port: 8080
+jenkins_java_opts: >-
+  -XX:+UseContainerSupport
+  -XX:MaxRAMPercentage=75.0
+  -Djenkins.install.runSetupWizard=false
+  -Dcasc.jenkins.config={{ jenkins_home }}/casc.yaml

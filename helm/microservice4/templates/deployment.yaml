@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Chart.Name }}
-    project: telstra
+    project: jeevagan
     version: {{ .Values.image.tag | quote }}
 spec:
   replicas: {{ .Values.replicaCount }}
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         app: {{ .Chart.Name }}
-        project: telstra
+        project: jeevagan
         version: {{ .Values.image.tag | quote }}
     spec:
       securityContext:

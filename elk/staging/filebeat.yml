@@ -40,5 +40,5 @@ logging.files:
 
 fields:
   environment: staging
-  cluster: staging-telstra-eks
+  cluster: staging-jeevagan-eks
 fields_under_root: true

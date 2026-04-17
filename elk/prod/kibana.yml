@@ -1,6 +1,6 @@
 server.port: 5601
 server.host: "0.0.0.0"
-server.name: "telstra-kibana-prod"
+server.name: "jeevagan-kibana-prod"
 server.ssl.enabled: true
 server.ssl.certificate: "/etc/kibana/certs/kibana.crt"
 server.ssl.key: "/etc/kibana/certs/kibana.key"

@@ -1,4 +1,4 @@
-cluster.name: telstra-prod
+cluster.name: jeevagan-prod
 node.name: ${HOSTNAME}
 node.roles: [master, data, ingest]
 

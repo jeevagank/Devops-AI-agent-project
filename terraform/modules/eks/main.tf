@@ -2,7 +2,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "20.0.0"
 
-  cluster_name    = "${var.env}-telstra-eks"
+  cluster_name    = "${var.env}-jeevagan-eks"
   cluster_version = var.cluster_version
 
   vpc_id     = var.vpc_id
@@ -20,20 +20,20 @@ module "eks" {
 
       labels = {
         Environment = var.env
-        Project     = "telstra"
+        Project     = "jeevagan"
       }
 
       # Required tags for Cluster Autoscaler auto-discovery
       tags = {
         "k8s.io/cluster-autoscaler/enabled"                        = "true"
-        "k8s.io/cluster-autoscaler/${var.env}-telstra-eks"         = "owned"
+        "k8s.io/cluster-autoscaler/${var.env}-jeevagan-eks"         = "owned"
       }
     }
   }
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }

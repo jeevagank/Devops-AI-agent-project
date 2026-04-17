@@ -1,0 +1,43 @@
+---
+- name: Add Jenkins YUM repository
+  get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+
+- name: Import Jenkins GPG key
+  rpm_key:
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    state: present
+
+- name: Install Jenkins {{ jenkins_version }}
+  dnf:
+    name: "jenkins-{{ jenkins_version }}"
+    state: present
+
+- name: Create Jenkins systemd override directory
+  file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+
+- name: Configure Jenkins JVM options and port
+  copy:
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    content: |
+      [Service]
+      Environment="JAVA_OPTS={{ jenkins_java_opts }}"
+      Environment="JENKINS_PORT={{ jenkins_port }}"
+  notify: Restart Jenkins
+
+- name: Set Jenkins home directory ownership
+  file:
+    path: "{{ jenkins_home }}"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    recurse: true
+
+- name: Enable and start Jenkins
+  systemd:
+    name: jenkins
+    enabled: true
+    state: started
+    daemon_reload: true

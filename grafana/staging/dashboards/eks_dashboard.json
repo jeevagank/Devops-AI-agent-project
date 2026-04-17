@@ -1,6 +1,6 @@
 {
   "title": "EKS Node Metrics",
-  "uid": "telstra-eks-staging",
+  "uid": "jeevagan-eks-staging",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "30s",

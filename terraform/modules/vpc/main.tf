@@ -2,7 +2,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
-  name = "${var.env}-telstra-vpc"
+  name = "${var.env}-jeevagan-vpc"
   cidr = var.vpc_cidr
 
   azs             = var.availability_zones
@@ -21,19 +21,19 @@ module "vpc" {
   create_flow_log_cloudwatch_log_group = true
 
   tags = {
-    Name        = "${var.env}-telstra-vpc"
+    Name        = "${var.env}-jeevagan-vpc"
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb"                        = "1"
-    "kubernetes.io/cluster/${var.env}-telstra-eks"           = "shared"
+    "kubernetes.io/cluster/${var.env}-jeevagan-eks"           = "shared"
   }
 
   public_subnet_tags = {
     "kubernetes.io/role/elb"                                 = "1"
-    "kubernetes.io/cluster/${var.env}-telstra-eks"           = "shared"
+    "kubernetes.io/cluster/${var.env}-jeevagan-eks"           = "shared"
   }
 }

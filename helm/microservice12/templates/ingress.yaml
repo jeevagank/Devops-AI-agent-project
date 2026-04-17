@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Chart.Name }}
-    project: telstra
+    project: jeevagan
   annotations:
     {{- toYaml .Values.ingress.annotations | nindent 4 }}
 spec:

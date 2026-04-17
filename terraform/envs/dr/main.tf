@@ -4,7 +4,7 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = "dr"
-      Project     = "telstra"
+      Project     = "jeevagan"
       ManagedBy   = "terraform"
       Region      = "ap-southeast-1"
     }
@@ -15,7 +15,7 @@ provider "aws" {
 data "terraform_remote_state" "prod" {
   backend = "s3"
   config = {
-    bucket = "telstra-tfstate-prod"
+    bucket = "jeevagan-tfstate-prod"
     key    = "terraform.tfstate"
     region = "ap-southeast-2"
   }
@@ -27,7 +27,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
-  name = "dr-telstra-vpc"
+  name = "dr-jeevagan-vpc"
   cidr = "10.3.0.0/16"
 
   azs             = ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"]
@@ -47,12 +47,12 @@ module "vpc" {
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb"              = "1"
-    "kubernetes.io/cluster/dr-telstra-eks"         = "shared"
+    "kubernetes.io/cluster/dr-jeevagan-eks"         = "shared"
   }
 
   public_subnet_tags = {
     "kubernetes.io/role/elb"                       = "1"
-    "kubernetes.io/cluster/dr-telstra-eks"         = "shared"
+    "kubernetes.io/cluster/dr-jeevagan-eks"         = "shared"
   }
 }
 
@@ -64,7 +64,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "20.0.0"
 
-  cluster_name    = "dr-telstra-eks"
+  cluster_name    = "dr-jeevagan-eks"
   cluster_version = "1.29"
 
   vpc_id     = module.vpc.vpc_id
@@ -82,7 +82,7 @@ module "eks" {
 
       labels = {
         Environment = "dr"
-        Project     = "telstra"
+        Project     = "jeevagan"
       }
     }
   }
@@ -103,7 +103,7 @@ module "cluster_autoscaler" {
 # ── Security group for Aurora DR ───────────────────────────────────────────────
 
 resource "aws_security_group" "aurora_dr" {
-  name        = "dr-telstra-aurora-sg"
+  name        = "dr-jeevagan-aurora-sg"
   description = "Aurora DR secondary cluster security group"
   vpc_id      = module.vpc.vpc_id
 
@@ -125,7 +125,7 @@ resource "aws_security_group" "aurora_dr" {
 # ── Aurora DB subnet group ─────────────────────────────────────────────────────
 
 resource "aws_db_subnet_group" "aurora_dr" {
-  name       = "dr-telstra-aurora-subnet-group"
+  name       = "dr-jeevagan-aurora-subnet-group"
   subnet_ids = module.vpc.private_subnets
 }
 
@@ -134,7 +134,7 @@ resource "aws_db_subnet_group" "aurora_dr" {
 # On failover, it is promoted to standalone via the Lambda handler.
 
 resource "aws_rds_cluster" "dr_secondary" {
-  cluster_identifier        = "dr-telstra-aurora"
+  cluster_identifier        = "dr-jeevagan-aurora"
   engine                    = "aurora-postgresql"
   engine_version            = "15.4"
   global_cluster_identifier = var.global_cluster_identifier
@@ -153,7 +153,7 @@ resource "aws_rds_cluster" "dr_secondary" {
 
   tags = {
     Environment = "dr"
-    Project     = "telstra"
+    Project     = "jeevagan"
     Role        = "secondary"
     Primary     = "ap-southeast-2"
   }
@@ -161,7 +161,7 @@ resource "aws_rds_cluster" "dr_secondary" {
 
 resource "aws_rds_cluster_instance" "dr_secondary" {
   count              = 1
-  identifier         = "dr-telstra-aurora-${count.index}"
+  identifier         = "dr-jeevagan-aurora-${count.index}"
   cluster_identifier = aws_rds_cluster.dr_secondary.id
   instance_class     = "db.r6g.large"
   engine             = aws_rds_cluster.dr_secondary.engine
@@ -169,7 +169,7 @@ resource "aws_rds_cluster_instance" "dr_secondary" {
 
   tags = {
     Environment = "dr"
-    Project     = "telstra"
+    Project     = "jeevagan"
   }
 }
 
@@ -178,7 +178,7 @@ resource "aws_rds_cluster_instance" "dr_secondary" {
 variable "global_cluster_identifier" {
   description = "Aurora Global DB cluster identifier created in the primary (ap-southeast-2) account"
   type        = string
-  default     = "telstra-aurora-global"
+  default     = "jeevagan-aurora-global"
 }
 
 # ── Outputs ────────────────────────────────────────────────────────────────────

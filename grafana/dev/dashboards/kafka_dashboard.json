@@ -1,6 +1,6 @@
 {
   "title": "MSK Kafka Metrics",
-  "uid": "telstra-kafka-dev",
+  "uid": "jeevagan-kafka-dev",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "30s",

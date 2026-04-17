@@ -16,13 +16,13 @@ variable "security_group_ids" {
 variable "database_name" {
   description = "Initial database name"
   type        = string
-  default     = "telstradb"
+  default     = "jeevagandb"
 }
 
 variable "master_username" {
   description = "Master DB username"
   type        = string
-  default     = "telstraadmin"
+  default     = "jeevaganadmin"
 }
 
 variable "engine_version" {

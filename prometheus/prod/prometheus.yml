@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: prod-telstra-eks
+    cluster: prod-jeevagan-eks
     env: prod
     region: ap-southeast-2
 

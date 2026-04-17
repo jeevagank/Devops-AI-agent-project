@@ -1,5 +1,5 @@
 resource "aws_elasticache_replication_group" "this" {
-  replication_group_id = "${var.env}-telstra-redis"
+  replication_group_id = "${var.env}-jeevagan-redis"
   description          = "Redis cluster for ${var.env}"
 
   node_type            = var.node_type
@@ -16,18 +16,18 @@ resource "aws_elasticache_replication_group" "this" {
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
 
 resource "aws_elasticache_subnet_group" "this" {
-  name       = "${var.env}-telstra-redis-subnet-group"
+  name       = "${var.env}-jeevagan-redis-subnet-group"
   subnet_ids = var.subnet_ids
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }

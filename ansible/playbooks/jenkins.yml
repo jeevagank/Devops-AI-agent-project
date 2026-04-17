@@ -1,0 +1,20 @@
+# Run this AFTER Terraform has provisioned the EC2 instance.
+#
+# Prerequisites:
+#   1. Export the Jenkins EC2 instance ID from Terraform output:
+#      export JENKINS_INSTANCE_ID=$(cd terraform/envs/tools && terraform output -raw jenkins_instance_id)
+#
+#   2. Store secrets in AWS Secrets Manager before running:
+#      aws secretsmanager create-secret --name jenkins/admin-password   --secret-string "<password>"
+#      aws secretsmanager create-secret --name jenkins/github-token     --secret-string "<token>"
+#      aws secretsmanager create-secret --name jenkins/sonarqube-token  --secret-string "<token>"
+#      aws secretsmanager create-secret --name jenkins/cosign-private-key --secret-string "$(cat cosign.key)"
+#
+#   3. Run the playbook:
+#      ansible-playbook -i inventory/hosts.yml playbooks/jenkins.yml
+
+- name: Install and configure Jenkins controller
+  hosts: jenkins
+  become: true
+  roles:
+    - jenkins

@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microservice6-dev
+  namespace: argocd
+  labels:
+    project: jeevagan
+    microservice: microservice6
+    environment: dev
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: jeevagan
+  source:
+    repoURL: https://github.com/jeevagank/Devops-AI-agent-project.git
+    targetRevision: main
+    path: helm/microservice6
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+  destination:
+    server: https://dev-jeevagan-eks.ap-southeast-2.eks.amazonaws.com
+    namespace: microservice6-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

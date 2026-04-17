@@ -1,0 +1,16 @@
+---
+- name: Generate kubeconfig for tools EKS (agent pods run here)
+  command: >
+    aws eks update-kubeconfig
+    --region {{ aws_region }}
+    --name {{ tools_eks_cluster }}
+    --kubeconfig {{ jenkins_home }}/.kube/config
+  become: true
+  become_user: "{{ jenkins_user }}"
+
+- name: Set kubeconfig ownership
+  file:
+    path: "{{ jenkins_home }}/.kube"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    recurse: true

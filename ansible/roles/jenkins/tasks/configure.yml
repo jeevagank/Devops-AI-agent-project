@@ -1,0 +1,33 @@
+---
+- name: Fetch Jenkins credentials from AWS Secrets Manager
+  command: >
+    aws secretsmanager get-secret-value
+    --secret-id {{ item.secret }}
+    --query SecretString
+    --output text
+    --region {{ aws_region }}
+  register: "{{ item.var }}"
+  no_log: true
+  loop:
+    - { secret: "jenkins/admin-password",   var: "jenkins_admin_pass" }
+    - { secret: "jenkins/github-token",      var: "jenkins_github_token" }
+    - { secret: "jenkins/sonarqube-token",   var: "jenkins_sonar_token" }
+    - { secret: "jenkins/cosign-private-key", var: "jenkins_cosign_key" }
+
+- name: Render JCasC configuration file
+  template:
+    src: jenkins-casc.yaml.j2
+    dest: "{{ jenkins_home }}/casc.yaml"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    mode: '0600'
+  notify: Reload JCasC
+
+- name: Set CASC_JENKINS_CONFIG environment variable
+  lineinfile:
+    path: /etc/systemd/system/jenkins.service.d/override.conf
+    regexp: '^Environment="JAVA_OPTS='
+    line: >-
+      Environment="JAVA_OPTS={{ jenkins_java_opts }}
+      -Dcasc.jenkins.config={{ jenkins_home }}/casc.yaml"
+  notify: Restart Jenkins

@@ -1,5 +1,5 @@
 resource "aws_lb" "this" {
-  name               = "${var.env}-telstra-alb"
+  name               = "${var.env}-jeevagan-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = var.security_group_ids
@@ -9,7 +9,7 @@ resource "aws_lb" "this" {
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
@@ -43,7 +43,7 @@ resource "aws_lb_listener" "http_redirect" {
 }
 
 resource "aws_lb_target_group" "default" {
-  name     = "${var.env}-telstra-tg"
+  name     = "${var.env}-jeevagan-tg"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -56,7 +56,7 @@ resource "aws_lb_target_group" "default" {
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }

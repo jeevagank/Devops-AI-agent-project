@@ -39,5 +39,5 @@ logging.files:
 
 fields:
   environment: dev
-  cluster: dev-telstra-eks
+  cluster: dev-jeevagan-eks
 fields_under_root: true

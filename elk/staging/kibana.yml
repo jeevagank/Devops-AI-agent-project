@@ -1,6 +1,6 @@
 server.port: 5601
 server.host: "0.0.0.0"
-server.name: "telstra-kibana-staging"
+server.name: "jeevagan-kibana-staging"
 
 elasticsearch.hosts: ["https://elasticsearch-staging:9200"]
 elasticsearch.username: "${KIBANA_USER}"

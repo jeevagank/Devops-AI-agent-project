@@ -1,6 +1,6 @@
 {
   "title": "Aurora Global DB & DR",
-  "uid": "telstra-aurora-prod",
+  "uid": "jeevagan-aurora-prod",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "1m",
@@ -68,7 +68,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "aws_rds_cpu_utilization_average{dbinstance_identifier=~'prod-telstra.*'}",
+          "expr": "aws_rds_cpu_utilization_average{dbinstance_identifier=~'prod-jeevagan.*'}",
           "legendFormat": "Primary — {{ dbinstance_identifier }}"
         }
       ],
@@ -82,7 +82,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "aws_rds_cpu_utilization_average{dbinstance_identifier=~'dr-telstra.*'}",
+          "expr": "aws_rds_cpu_utilization_average{dbinstance_identifier=~'dr-jeevagan.*'}",
           "legendFormat": "DR — {{ dbinstance_identifier }}"
         }
       ],
@@ -96,7 +96,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "aws_rds_database_connections_average{dbinstance_identifier=~'prod-telstra.*'}",
+          "expr": "aws_rds_database_connections_average{dbinstance_identifier=~'prod-jeevagan.*'}",
           "legendFormat": "{{ dbinstance_identifier }}"
         }
       ],

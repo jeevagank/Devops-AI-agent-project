@@ -1,0 +1,80 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Chart.Name }}
+    project: jeevagan
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+
+  # ── Ingress ────────────────────────────────────────────────────────────────
+  ingress:
+    # Allow traffic from ALB ingress controller only
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: aws-load-balancer-controller
+      ports:
+        - port: 8080
+          protocol: TCP
+
+    # Allow traffic from other microservices within the same namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - port: 8080
+          protocol: TCP
+
+    # Allow Prometheus scraping from monitoring namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - port: 8080
+          protocol: TCP
+
+  # ── Egress ─────────────────────────────────────────────────────────────────
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+    # Allow outbound to AWS services (RDS, MSK, Redis, ECR, Secrets Manager)
+    # Scoped to HTTPS and known data-plane ports only
+    - ports:
+        - port: 443    # HTTPS / ECR / Secrets Manager / AWS APIs
+          protocol: TCP
+        - port: 5432   # Aurora PostgreSQL
+          protocol: TCP
+        - port: 6379   # ElastiCache Redis
+          protocol: TCP
+        - port: 9094   # MSK Kafka (TLS)
+          protocol: TCP
+
+    # Allow outbound to other microservices within the same namespace
+    - to:
+        - podSelector: {}
+      ports:
+        - port: 8080
+          protocol: TCP

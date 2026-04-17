@@ -69,7 +69,7 @@ alertmanager:
             description: '{{ .CommonLabels.alertname }} — {{ .CommonAnnotations.summary }}'
             details:
               env: staging
-              cluster: staging-telstra-eks
+              cluster: staging-jeevagan-eks
               description: '{{ .CommonAnnotations.description }}'
 
     inhibit_rules:

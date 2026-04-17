@@ -1,5 +1,5 @@
 resource "aws_msk_cluster" "this" {
-  cluster_name           = "${var.env}-telstra-kafka"
+  cluster_name           = "${var.env}-jeevagan-kafka"
   kafka_version          = var.kafka_version
   number_of_broker_nodes = var.number_of_broker_nodes
 
@@ -23,7 +23,7 @@ resource "aws_msk_cluster" "this" {
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }

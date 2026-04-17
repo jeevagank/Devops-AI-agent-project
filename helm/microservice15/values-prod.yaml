@@ -13,7 +13,7 @@ hpa:
   maxReplicas: 10
 
 ingress:
-  host: microservice15.prod.internal.telstra.com
+  host: microservice15.prod.internal.jeevagan.com
 
 env:
   APP_ENV: production

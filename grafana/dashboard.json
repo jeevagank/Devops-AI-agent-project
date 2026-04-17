@@ -1,6 +1,6 @@
 {
-  "title": "Telstra EKS Platform Dashboard",
-  "uid": "telstra-eks-platform",
+  "title": "Jeevagan EKS Platform Dashboard",
+  "uid": "jeevagan-eks-platform",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "30s",

@@ -28,7 +28,7 @@ hpa:
 
 ingress:
   enabled: true
-  host: microservice8.internal.telstra.com
+  host: microservice8.internal.jeevagan.com
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internal

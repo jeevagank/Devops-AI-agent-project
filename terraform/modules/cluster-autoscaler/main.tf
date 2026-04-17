@@ -1,7 +1,7 @@
 # ── IRSA IAM Policy ────────────────────────────────────────────────────────────
 
 resource "aws_iam_policy" "cluster_autoscaler" {
-  name        = "${var.env}-telstra-cluster-autoscaler"
+  name        = "${var.env}-jeevagan-cluster-autoscaler"
   description = "IAM policy for Cluster Autoscaler IRSA"
 
   policy = jsonencode({
@@ -42,7 +42,7 @@ resource "aws_iam_policy" "cluster_autoscaler" {
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
@@ -74,12 +74,12 @@ data "aws_iam_policy_document" "cluster_autoscaler_assume" {
 }
 
 resource "aws_iam_role" "cluster_autoscaler" {
-  name               = "${var.env}-telstra-cluster-autoscaler"
+  name               = "${var.env}-jeevagan-cluster-autoscaler"
   assume_role_policy = data.aws_iam_policy_document.cluster_autoscaler_assume.json
 
   tags = {
     Environment = var.env
-    Project     = "telstra"
+    Project     = "jeevagan"
     ManagedBy   = "terraform"
   }
 }
