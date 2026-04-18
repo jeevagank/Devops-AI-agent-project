@@ -1,2 +1,0 @@
-# Index Patterns for Kibana
-applogs-*

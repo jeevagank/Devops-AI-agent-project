@@ -1,0 +1,33 @@
+{{- if eq .Values.deployment.strategy "canary" }}
+# AnalysisTemplate — Prometheus-based automatic rollback for canary deployments.
+# Argo Rollouts queries this every minute during canary steps.
+# If success rate drops below 95% three times in a row, rollout is aborted
+# and traffic is shifted back to the stable version automatically.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+  namespace: {{ .Release.Namespace }}
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: success-rate
+      interval: 1m
+      # Pass condition: 95%+ requests are non-5xx
+      successCondition: result[0] >= 0.95
+      # Auto-abort after 3 consecutive failures
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc.cluster.local:9090
+          query: |
+            sum(rate(http_requests_total{
+              service="{{ `{{args.service-name}}` }}",
+              status!~"5.."
+            }[5m]))
+            /
+            sum(rate(http_requests_total{
+              service="{{ `{{args.service-name}}` }}"
+            }[5m]))
+{{- end }}

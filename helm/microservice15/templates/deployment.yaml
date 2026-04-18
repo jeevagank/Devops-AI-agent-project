@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ .Chart.Name }}
   namespace: {{ .Release.Namespace }}
@@ -12,12 +12,13 @@ spec:
   selector:
     matchLabels:
       app: {{ .Chart.Name }}
+      version: {{ .Values.deployment.color }}
   template:
     metadata:
       labels:
         app: {{ .Chart.Name }}
         project: jeevagan
-        version: {{ .Values.image.tag | quote }}
+        version: {{ .Values.deployment.color }}
     spec:
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
@@ -60,3 +61,28 @@ spec:
             - name: APP_ENV
               value: {{ .Values.env.APP_ENV | quote }}
       terminationGracePeriodSeconds: 30
+
+  # ── Deployment Strategy ───────────────────────────────────────────────────
+  strategy:
+    {{- if eq .Values.deployment.strategy "blueGreen" }}
+    # Blue-Green: full new version deployed, traffic switched instantly
+    blueGreen:
+      activeService: {{ .Chart.Name }}           # service receiving live traffic
+      previewService: {{ .Chart.Name }}-preview  # service for testing new version before cutover
+      autoPromotionEnabled: false                # manual promotion required — prevents accidental cutover
+      scaleDownDelaySeconds: 30                  # keep old (blue) pods 30s after cutover for instant rollback
+    {{- else }}
+    # Canary: gradually shift traffic, auto-rollback on Prometheus metric failure
+    canary:
+      canaryService: {{ .Chart.Name }}-canary    # service routing canary % traffic
+      stableService: {{ .Chart.Name }}           # service routing stable % traffic
+      steps:
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
+      analysis:
+        templates:
+          - templateName: success-rate
+        startingStep: 1
+        args:
+          - name: service-name
+            value: {{ .Chart.Name }}
+    {{- end }}

@@ -8,10 +8,33 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
+# ── Deployment Strategy ────────────────────────────────────────────────────────
+# Switch between "canary" and "blueGreen" here
+deployment:
+  strategy: canary   # options: canary | blueGreen
+  color: blue        # used for blueGreen only — blue = current live version
+
 service:
   type: ClusterIP
   port: 80
   targetPort: 8080
+  activeColor: blue    # blueGreen only — controls which color gets live traffic
+  previewColor: green  # blueGreen only — preview service always points to inactive color
+
+# ── Canary Steps (used when deployment.strategy = canary) ─────────────────────
+rollout:
+  canary:
+    steps:
+      - setWeight: 10        # send 10% traffic to new version
+      - pause:
+          duration: 5m       # wait 5 min, Prometheus checks success rate
+      - setWeight: 30
+      - pause:
+          duration: 5m
+      - setWeight: 60
+      - pause:
+          duration: 5m
+      - setWeight: 100       # fully rolled out
 
 resources:
   requests:
